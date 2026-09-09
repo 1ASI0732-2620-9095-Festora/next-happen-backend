@@ -1,0 +1,6 @@
+@com.festora.nexthappen_HostAddress = http://localhost:5179
+
+GET {{com.festora.nexthappen_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
