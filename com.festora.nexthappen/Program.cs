@@ -79,6 +79,10 @@ using (var scope = app.Services.CreateScope())
             .CreateTables();
     } catch { }
 }
+
+// Seed demo users and initial events if empty
+await DatabaseSeeder.SeedAsync(app.Services);
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
