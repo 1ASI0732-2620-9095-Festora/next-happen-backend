@@ -25,6 +25,8 @@ public class IamDbContext : DbContext
             entity.Property(u => u.PasswordHash).IsRequired();
             entity.Property(u => u.Role).HasMaxLength(50).IsRequired();
             entity.Property(u => u.AvatarUrl).HasMaxLength(500);
+            entity.Property(u => u.TermsAcceptedAt);
+            entity.Property(u => u.TermsVersion).HasMaxLength(50);
         });
     }
 }

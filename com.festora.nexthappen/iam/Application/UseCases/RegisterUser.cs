@@ -27,7 +27,9 @@ public class RegisterUser
             FullName = request.FullName,
             Email = request.Email,
             PasswordHash = _passwordHasher.Hash(request.Password),
-            Role = request.Role
+            Role = request.Role,
+            TermsAcceptedAt = request.TermsAccepted ? DateTime.UtcNow : null,
+            TermsVersion = request.TermsAccepted ? (string.IsNullOrWhiteSpace(request.TermsVersion) ? "v1.0-2026" : request.TermsVersion) : null
         };
 
         await _userRepository.AddAsync(user);
