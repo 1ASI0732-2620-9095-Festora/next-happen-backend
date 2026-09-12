@@ -51,19 +51,27 @@ public class EventController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "Organizer,Admin")]
     public async Task<IActionResult> GetAll()
     {
-        var events = await _service.GetAllAsync();
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
 
-        if (userRole != "Admin" && !string.IsNullOrEmpty(userId))
+        if (userRole == "Organizer" && !string.IsNullOrEmpty(userId))
         {
+            var events = await _service.GetAllAsync();
             events = events.Where(e => e.Organizer == userId);
+            return Ok(events.Select(ToResponse));
         }
 
-        return Ok(events.Select(ToResponse));
+        if (userRole == "Admin")
+        {
+            var events = await _service.GetAllAsync();
+            return Ok(events.Select(ToResponse));
+        }
+
+        // Public/unauthenticated discovery
+        var publicEvents = await _service.GetPublicAsync();
+        return Ok(publicEvents.Select(ToResponse));
     }
 
     [HttpGet("public")]

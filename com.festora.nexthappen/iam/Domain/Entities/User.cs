@@ -8,4 +8,6 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
     public string Role { get; set; } = "User"; // "User" o "Organizer"
     public string? AvatarUrl { get; set; }
+    public DateTime? TermsAcceptedAt { get; set; }
+    public string? TermsVersion { get; set; }
 }
