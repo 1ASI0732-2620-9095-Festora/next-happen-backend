@@ -48,6 +48,7 @@ public class AuthController : ControllerBase
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (string Code, DateTime ExpiresAt)> OtpStorage = new();
 
     [HttpPost("send-otp")]
+    [HttpPost("2fa/send")]
     public IActionResult SendOtp([FromBody] SendOtpRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Email))
@@ -66,6 +67,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("verify-otp")]
+    [HttpPost("2fa/verify")]
     public IActionResult VerifyOtp([FromBody] VerifyOtpRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Code))

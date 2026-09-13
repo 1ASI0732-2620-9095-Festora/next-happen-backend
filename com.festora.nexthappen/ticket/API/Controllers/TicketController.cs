@@ -20,11 +20,13 @@ public class TicketController : ControllerBase
     }
 
     [HttpGet("api/users/tickets")]
+    [HttpGet("api/users/{userId:guid}/tickets")]
     [Authorize]
-    public async Task<IActionResult> GetUserTickets()
+    public async Task<IActionResult> GetUserTickets(Guid? userId)
     {
-        var userId = GetUserId();
-        var tickets = await _service.GetByUserAsync(userId);
+        var targetId = (userId.HasValue && userId.Value != Guid.Empty) ? userId.Value : GetUserId();
+        if (!IsSelfOrAdmin(targetId)) return Forbid();
+        var tickets = await _service.GetByUserAsync(targetId);
         return Ok(tickets);
     }
 
