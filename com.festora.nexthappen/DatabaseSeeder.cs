@@ -15,6 +15,14 @@ public static class DatabaseSeeder
         var iamDb = scope.ServiceProvider.GetRequiredService<IamDbContext>();
         var eventDb = scope.ServiceProvider.GetRequiredService<EventDbContext>();
 
+        // Ensure columns exist on legacy tables
+        try
+        {
+            await iamDb.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE Users ADD COLUMN IF NOT EXISTS TermsAcceptedAt datetime(6) NULL, ADD COLUMN IF NOT EXISTS TermsVersion varchar(50) NULL;");
+        }
+        catch { }
+
         // 1. Seed Demo Users
         var organizerId = Guid.Parse("f402db94-8448-43da-ab30-ebfa9e606900");
         var userId = Guid.Parse("bc1543c2-c24d-4e06-9b6e-fb5865acf1e6");
