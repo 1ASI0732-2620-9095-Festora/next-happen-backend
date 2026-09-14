@@ -28,7 +28,9 @@ public class UsersController : ControllerBase
             user.FullName,
             user.Email,
             user.Role,
-            user.AvatarUrl
+            user.AvatarUrl,
+            user.TermsAcceptedAt,
+            user.TermsVersion
         });
     }
 
