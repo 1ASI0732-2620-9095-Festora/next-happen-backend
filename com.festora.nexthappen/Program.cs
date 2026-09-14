@@ -36,13 +36,11 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer
     });
 builder.Services.AddAuthorization();
 
-// 👇 AÑADE ESTAS LÍNEAS AQUÍ 👇
-// Sustituye "PasswordHasherImplementation" por tu clase real que encripta contraseñas (ej. BCryptPasswordHasher)
-builder.Services.AddScoped<com.festora.nexthappen.iam.Domain.Services.IPasswordHasher, BCryptPasswordHasher>(); 
+// Configuración de Stripe
+builder.Services.Configure<com.festora.nexthappen.ticket.Infrastructure.Payments.StripeOptions>(
+    builder.Configuration.GetSection("Stripe"));
 
-// Registra el cliente HTTP para EventCatalogClient
-builder.Services.AddHttpClient<com.festora.nexthappen.ticket.Infrastructure.Http.EventCatalogClient>();
-// 👆 ---------------------- 👆
+builder.Services.AddScoped<com.festora.nexthappen.iam.Domain.Services.IPasswordHasher, BCryptPasswordHasher>();
 
 // 1. Configurar CORS
 builder.Services.AddCors(options =>
