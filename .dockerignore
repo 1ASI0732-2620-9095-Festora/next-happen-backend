@@ -1,0 +1,11 @@
+**/.git
+**/.github
+**/.vs
+**/.idea
+**/.vscode
+**/bin
+**/obj
+**/out
+*.user
+*.suo
+README.md

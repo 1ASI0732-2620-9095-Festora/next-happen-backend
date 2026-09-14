@@ -4,6 +4,10 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Soporte para Render y puertos dinamicos
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+builder.WebHost.UseUrls($"http://+:{port}");
+
 // Add services to the container.
 // Registra todos los repositorios, servicios y bases de datos.
 builder.Services.AddAppServices(builder.Configuration);
@@ -84,11 +88,10 @@ using (var scope = app.Services.CreateScope())
 await DatabaseSeeder.SeedAsync(app.Services);
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.MapGet("/", () => Results.Ok(new { status = "online", service = "NextHappen Backend API", docs = "/swagger" }));
 
 // 2. Usar CORS antes de mapear los controladores
 app.UseCors("AllowMobileApp");
