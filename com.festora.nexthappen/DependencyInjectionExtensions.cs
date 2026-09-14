@@ -18,6 +18,7 @@ using com.festora.nexthappen.ticket.Infrastructure.Persistence;
 using com.festora.nexthappen.ticket.Domain.Repositories;
 using com.festora.nexthappen.ticket.Infrastructure.Persistence.Repositories;
 using com.festora.nexthappen.ticket.Application.Services;
+using com.festora.nexthappen.ticket.Infrastructure.Http;
 
 namespace com.festora.nexthappen;
 
@@ -59,6 +60,7 @@ public static class
         services.AddScoped<TicketService>();
         services.AddScoped<SalesService>();
         services.AddScoped<PaymentService>();
+        services.AddScoped<EventCatalogClient>();
 
         return services;
     }
