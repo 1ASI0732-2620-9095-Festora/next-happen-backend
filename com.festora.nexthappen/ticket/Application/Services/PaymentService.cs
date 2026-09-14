@@ -70,9 +70,28 @@ public class PaymentService
             Status = OrderStatus.Pending
         };
 
-        // 3) Crear la sesión de Stripe Checkout.
+        // 3) Crear la sesión de Stripe Checkout o modo simulación/sandbox si no hay clave configurada.
+        var isStripeConfigured = !string.IsNullOrWhiteSpace(_stripe.SecretKey)
+            && !_stripe.SecretKey.StartsWith("placeholder", StringComparison.OrdinalIgnoreCase);
+
+        if (!isStripeConfigured)
+        {
+            order.StripeSessionId = $"sim_{Guid.NewGuid():N}";
+            await _orderRepo.AddAsync(order);
+
+            var baseUrl = (_stripe.FrontendBaseUrl ?? "http://localhost:5173").TrimEnd('/');
+            _logger.LogInformation("[Payments] Creando sesión de pago simulada {SessionId} para pedido {OrderId}", order.StripeSessionId, order.Id);
+
+            return new CheckoutResponse
+            {
+                OrderId = order.Id,
+                CheckoutUrl = $"{baseUrl}/user/checkout/success?session_id={order.StripeSessionId}"
+            };
+        }
+
         try
         {
+            StripeConfiguration.ApiKey = _stripe.SecretKey;
             var options = new SessionCreateOptions
             {
                 Mode = "payment",
@@ -167,9 +186,17 @@ public class PaymentService
 
         if (order.Status != OrderStatus.Paid)
         {
-            var session = await new SessionService().GetAsync(sessionId);
-            if (session.PaymentStatus == "paid")
-                await MarkOrderPaidAndIssueTicketsAsync(order, session.PaymentIntentId);
+            if (sessionId.StartsWith("sim_") || order.StripeSessionId.StartsWith("sim_"))
+            {
+                await MarkOrderPaidAndIssueTicketsAsync(order, $"pi_sim_{order.Id:N}");
+            }
+            else
+            {
+                StripeConfiguration.ApiKey = _stripe.SecretKey;
+                var session = await new SessionService().GetAsync(sessionId);
+                if (session.PaymentStatus == "paid")
+                    await MarkOrderPaidAndIssueTicketsAsync(order, session.PaymentIntentId);
+            }
         }
 
         return new ConfirmResult { Status = order.Status, Quantity = order.Quantity };
@@ -220,21 +247,29 @@ public class PaymentService
 
         var order = await _orderRepo.GetByIdAsync(ticket.OrderId)
             ?? throw new InvalidOperationException("Pedido asociado no encontrado.");
-        if (string.IsNullOrEmpty(order.StripePaymentIntentId))
-            throw new InvalidOperationException("El pago no puede reembolsarse (sin PaymentIntent).");
 
-        // Reembolso parcial: el importe de una sola entrada.
-        await new RefundService().CreateAsync(new RefundCreateOptions
+        if (order.StripePaymentIntentId?.StartsWith("pi_sim_") == true)
         {
-            PaymentIntent = order.StripePaymentIntentId,
-            Amount = ToMinorUnits(ticket.Price)
-        });
+            _logger.LogInformation("[Simulation] Reembolso simulado para entrada {TicketId}", ticket.Id);
+        }
+        else
+        {
+            if (string.IsNullOrEmpty(order.StripePaymentIntentId))
+                throw new InvalidOperationException("El pago no puede reembolsarse (sin PaymentIntent).");
+
+            StripeConfiguration.ApiKey = _stripe.SecretKey;
+            await new RefundService().CreateAsync(new RefundCreateOptions
+            {
+                PaymentIntent = order.StripePaymentIntentId,
+                Amount = ToMinorUnits(ticket.Price)
+            });
+        }
 
         ticket.Status = TicketStatus.Refunded;
         await _ticketRepo.UpdateAsync(ticket);
 
         await _events.ReleaseSeatsAsync(ticket.EventId, 1);
-        _logger.LogInformation("[Stripe] Entrada {TicketId} reembolsada por {Amount} {Currency}",
+        _logger.LogInformation("[Payments] Entrada {TicketId} reembolsada por {Amount} {Currency}",
             ticket.Id, ticket.Price, order.Currency);
     }
 
