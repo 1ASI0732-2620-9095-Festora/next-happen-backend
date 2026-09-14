@@ -9,6 +9,7 @@ namespace com.festora.nexthappen.engagement.API.Controllers;
 
 [ApiController]
 [Route("api/users/saved-events")]
+[Route("api/users/{userId:guid}/saved-events")]
 [Authorize]
 public class SavedEventsController : ControllerBase
 {
@@ -19,34 +20,37 @@ public class SavedEventsController : ControllerBase
         _service = service;
     }
 
-    private Guid GetAuthenticatedUserId()
+    private Guid GetAuthenticatedUserId(Guid? routeUserId = null)
     {
+        if (routeUserId.HasValue && routeUserId.Value != Guid.Empty)
+            return routeUserId.Value;
+
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         Guid.TryParse(userIdStr, out var userId);
         return userId;
     }
 
     [HttpPost("{eventId:guid}")]
-    public async Task<IActionResult> SaveEvent(Guid eventId)
+    public async Task<IActionResult> SaveEvent(Guid eventId, [FromRoute] Guid? userId = null)
     {
-        var userId = GetAuthenticatedUserId();
-        var success = await _service.SaveEventAsync(userId, eventId);
+        var targetUserId = GetAuthenticatedUserId(userId);
+        var success = await _service.SaveEventAsync(targetUserId, eventId);
         return success ? Ok() : Conflict("Event already saved.");
     }
 
     [HttpDelete("{eventId:guid}")]
-    public async Task<IActionResult> Delete(Guid eventId)
+    public async Task<IActionResult> Delete(Guid eventId, [FromRoute] Guid? userId = null)
     {
-        var userId = GetAuthenticatedUserId();
-        var success = await _service.RemoveAsync(userId, eventId);
+        var targetUserId = GetAuthenticatedUserId(userId);
+        var success = await _service.RemoveAsync(targetUserId, eventId);
         return success ? Ok() : NotFound();
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromRoute] Guid? userId = null)
     {
-        var userId = GetAuthenticatedUserId();
-        var events = await _service.GetByUserAsync(userId);
+        var targetUserId = GetAuthenticatedUserId(userId);
+        var events = await _service.GetByUserAsync(targetUserId);
         return Ok(events);
     }
 }
