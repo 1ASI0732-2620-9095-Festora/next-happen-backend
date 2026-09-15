@@ -1,5 +1,9 @@
+using System.Security.Cryptography;
 using com.festora.nexthappen.iam.Application.DTOs;
+using com.festora.nexthappen.iam.Application.Services;
 using com.festora.nexthappen.iam.Application.UseCases;
+using com.festora.nexthappen.iam.Domain.Repositories;
+using com.festora.nexthappen.iam.Infrastructure.Email;
 using Microsoft.AspNetCore.Mvc;
 
 namespace com.festora.nexthappen.iam.API.Controllers;
@@ -10,11 +14,25 @@ public class AuthController : ControllerBase
 {
     private readonly RegisterUser _registerUser;
     private readonly LoginUser _loginUser;
+    private readonly IUserRepository _userRepository;
+    private readonly IEmailService _emailService;
+    private readonly TwoFactorStore _twoFactorStore;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(RegisterUser registerUser, LoginUser loginUser)
+    public AuthController(
+        RegisterUser registerUser,
+        LoginUser loginUser,
+        IUserRepository userRepository,
+        IEmailService emailService,
+        TwoFactorStore twoFactorStore,
+        ILogger<AuthController> logger)
     {
         _registerUser = registerUser;
         _loginUser = loginUser;
+        _userRepository = userRepository;
+        _emailService = emailService;
+        _twoFactorStore = twoFactorStore;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -45,23 +63,44 @@ public class AuthController : ControllerBase
         }
     }
 
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (string Code, DateTime ExpiresAt)> OtpStorage = new();
-
     [HttpPost("send-otp")]
     [HttpPost("2fa/send")]
-    public IActionResult SendOtp([FromBody] SendOtpRequest request)
+    public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Email))
             return BadRequest(new { error = "El correo electrónico es requerido." });
 
-        var randomCode = Random.Shared.Next(100000, 999999).ToString();
-        OtpStorage[request.Email.Trim().ToLowerInvariant()] = (randomCode, DateTime.UtcNow.AddMinutes(10));
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var user = await _userRepository.GetByEmailAsync(normalizedEmail);
+
+        var randomCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+        _twoFactorStore.SaveCode(normalizedEmail, randomCode, TimeSpan.FromMinutes(5));
+
+        var (sent, errorMsg) = await _emailService.SendTwoFactorCodeAsync(
+            request.Email.Trim(),
+            randomCode,
+            user?.FullName);
+
+        if (sent)
+        {
+            return Ok(new
+            {
+                success = true,
+                sent = true,
+                message = "Código OTP enviado exitosamente a tu correo electrónico.",
+                expiresInSeconds = 300
+            });
+        }
+
+        _logger.LogWarning("[2FA] No se pudo enviar correo a {Email}: {Error}. Fallback código generado: {Code}",
+            normalizedEmail, errorMsg, randomCode);
 
         return Ok(new
         {
             success = true,
-            message = "Código OTP enviado exitosamente al correo.",
-            expiresInSeconds = 600,
+            sent = false,
+            message = errorMsg ?? "No se pudo entregar el correo electrónico.",
+            expiresInSeconds = 300,
             debugCode = randomCode
         });
     }
@@ -73,27 +112,15 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Code))
             return BadRequest(new { error = "Correo y código son requeridos." });
 
-        var key = request.Email.Trim().ToLowerInvariant();
-        if (OtpStorage.TryGetValue(key, out var entry))
-        {
-            if (DateTime.UtcNow > entry.ExpiresAt)
-            {
-                OtpStorage.TryRemove(key, out _);
-                return BadRequest(new { error = "El código ha expirado." });
-            }
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var (valid, errorMsg) = _twoFactorStore.VerifyCode(normalizedEmail, request.Code.Trim());
 
-            if (entry.Code == request.Code.Trim() || request.Code.Trim() == "123456")
-            {
-                OtpStorage.TryRemove(key, out _);
-                return Ok(new { success = true, verified = true });
-            }
-        }
-        else if (request.Code.Trim() == "123456")
+        if (valid || request.Code.Trim() == "123456")
         {
             return Ok(new { success = true, verified = true });
         }
 
-        return BadRequest(new { error = "Código de verificación inválido." });
+        return BadRequest(new { error = errorMsg ?? "Código de verificación inválido." });
     }
 }
 

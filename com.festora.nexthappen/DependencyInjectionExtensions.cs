@@ -3,6 +3,8 @@ using com.festora.nexthappen.iam.Infrastructure.Persistence;
 using com.festora.nexthappen.iam.Domain.Repositories;
 using com.festora.nexthappen.iam.Infrastructure.Persistence.Repositories;
 using com.festora.nexthappen.iam.Application.UseCases;
+using com.festora.nexthappen.iam.Application.Services;
+using com.festora.nexthappen.iam.Infrastructure.Email;
 
 using com.festora.nexthappen.@event.Infrastructure.Persistence;
 using com.festora.nexthappen.@event.Domain.Repositories;
@@ -36,6 +38,8 @@ public static class
         services.AddScoped<RegisterUser>();
         services.AddScoped<LoginUser>();
         services.AddScoped<com.festora.nexthappen.iam.Infrastructure.Security.JwtTokenGenerator>();
+        services.AddSingleton<TwoFactorStore>();
+        services.AddHttpClient<IEmailService, ResendEmailService>();
 
         // --- Event Module ---
         services.AddDbContext<EventDbContext>(opt => opt.UseMySql(connectionString, serverVersion));
