@@ -16,7 +16,7 @@ public class JwtTokenGenerator
 
     public string GenerateToken(Guid userId, string email, string role, string fullName)
     {
-        var jwtKey = _config["Jwt:Key"] ?? _config["JWT_KEY"] ?? "DefaultSuperSecretKeyForDevelopmentOnly!";
+        var jwtKey = _config["Jwt:Key"] ?? _config["JWT_KEY"] ?? "DEV_ONLY_INSECURE_JWT_KEY_change_me_before_production_1234567890";
         var jwtIssuer = _config["Jwt:Issuer"] ?? _config["JWT_ISSUER"];
         var jwtAudience = _config["Jwt:Audience"] ?? _config["JWT_AUDIENCE"];
 
