@@ -71,9 +71,6 @@ builder.Services.AddAuthorization();
 builder.Services.Configure<com.festora.nexthappen.ticket.Infrastructure.Payments.StripeOptions>(
     builder.Configuration.GetSection("Stripe"));
 
-// Configuración de Resend
-builder.Services.Configure<com.festora.nexthappen.iam.Infrastructure.Email.ResendOptions>(
-    builder.Configuration.GetSection("Resend"));
 
 builder.Services.AddScoped<com.festora.nexthappen.iam.Domain.Services.IPasswordHasher, BCryptPasswordHasher>();
 

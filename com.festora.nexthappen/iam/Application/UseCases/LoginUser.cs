@@ -34,6 +34,7 @@ public class LoginUser
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email,
+            Phone = user.Phone,
             Role = user.Role,
             Token = token,
             AvatarUrl = user.AvatarUrl

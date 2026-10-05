@@ -26,6 +26,7 @@ public class RegisterUser
         {
             FullName = request.FullName,
             Email = request.Email,
+            Phone = request.Phone,
             PasswordHash = _passwordHasher.Hash(request.Password),
             Role = request.Role,
             TermsAcceptedAt = request.TermsAccepted ? DateTime.UtcNow : null,

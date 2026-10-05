@@ -3,8 +3,6 @@ using com.festora.nexthappen.iam.Infrastructure.Persistence;
 using com.festora.nexthappen.iam.Domain.Repositories;
 using com.festora.nexthappen.iam.Infrastructure.Persistence.Repositories;
 using com.festora.nexthappen.iam.Application.UseCases;
-using com.festora.nexthappen.iam.Application.Services;
-using com.festora.nexthappen.iam.Infrastructure.Email;
 
 using com.festora.nexthappen.@event.Infrastructure.Persistence;
 using com.festora.nexthappen.@event.Domain.Repositories;
@@ -22,6 +20,10 @@ using com.festora.nexthappen.ticket.Infrastructure.Persistence.Repositories;
 using com.festora.nexthappen.ticket.Application.Services;
 using com.festora.nexthappen.ticket.Infrastructure.Http;
 
+using com.festora.nexthappen.notification.Application.Services;
+using com.festora.nexthappen.notification.Infrastructure.External;
+using com.festora.nexthappen.notification.Infrastructure.Verification;
+
 namespace com.festora.nexthappen;
 
 public static class 
@@ -38,8 +40,6 @@ public static class
         services.AddScoped<RegisterUser>();
         services.AddScoped<LoginUser>();
         services.AddScoped<com.festora.nexthappen.iam.Infrastructure.Security.JwtTokenGenerator>();
-        services.AddSingleton<TwoFactorStore>();
-        services.AddHttpClient<IEmailService, ResendEmailService>();
 
         // --- Event Module ---
         services.AddDbContext<EventDbContext>(opt => opt.UseMySql(connectionString, serverVersion));
@@ -65,6 +65,11 @@ public static class
         services.AddScoped<SalesService>();
         services.AddScoped<PaymentService>();
         services.AddScoped<EventCatalogClient>();
+
+        // --- Notification Module ---
+        services.AddSingleton<VerificationCodeStore>();
+        services.AddScoped<TwilioSmsClient>();
+        services.AddScoped<VerificationCodeService>();
 
         return services;
     }

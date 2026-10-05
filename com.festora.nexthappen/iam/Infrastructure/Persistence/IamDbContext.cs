@@ -22,6 +22,7 @@ public class IamDbContext : DbContext
             entity.Property(u => u.FullName).HasMaxLength(200).IsRequired();
             entity.Property(u => u.Email).HasMaxLength(200).IsRequired();
             entity.HasIndex(u => u.Email).IsUnique();
+            entity.Property(u => u.Phone).HasMaxLength(50);
             entity.Property(u => u.PasswordHash).IsRequired();
             entity.Property(u => u.Role).HasMaxLength(50).IsRequired();
             entity.Property(u => u.AvatarUrl).HasMaxLength(500);
