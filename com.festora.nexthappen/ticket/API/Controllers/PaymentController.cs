@@ -37,7 +37,7 @@ public class PaymentController : ControllerBase
 
         try
         {
-            var result = await _payments.CreateCheckoutSessionAsync(userId, request.EventId, request.Quantity);
+            var result = await _payments.CreateCheckoutSessionAsync(userId, request.EventId, request.Quantity, request.SuccessUrl, request.CancelUrl);
             return Ok(result);
         }
         catch (InvalidOperationException ex)

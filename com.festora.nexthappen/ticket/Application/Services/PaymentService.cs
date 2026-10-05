@@ -43,7 +43,7 @@ public class PaymentService
     /// Reserva los cupos, crea un pedido Pending y una sesión de Stripe Checkout.
     /// Devuelve la URL a la que redirigir al usuario para pagar.
     /// </summary>
-    public async Task<CheckoutResponse> CreateCheckoutSessionAsync(Guid userId, Guid eventId, int quantity)
+    public async Task<CheckoutResponse> CreateCheckoutSessionAsync(Guid userId, Guid eventId, int quantity, string? successUrl = null, string? cancelUrl = null)
     {
         if (quantity < 1) throw new ArgumentException("La cantidad debe ser al menos 1.");
 
@@ -74,18 +74,26 @@ public class PaymentService
         var isStripeConfigured = !string.IsNullOrWhiteSpace(_stripe.SecretKey)
             && !_stripe.SecretKey.StartsWith("placeholder", StringComparison.OrdinalIgnoreCase);
 
+        var baseUrl = (_stripe.FrontendBaseUrl ?? "http://localhost:5173").TrimEnd('/');
+        var finalSuccessUrl = !string.IsNullOrEmpty(successUrl)
+            ? (successUrl.Contains("?") ? $"{successUrl}&session_id={{CHECKOUT_SESSION_ID}}" : $"{successUrl}?session_id={{CHECKOUT_SESSION_ID}}")
+            : $"{baseUrl}/user/checkout/success?session_id={{CHECKOUT_SESSION_ID}}";
+            
+        var finalCancelUrl = !string.IsNullOrEmpty(cancelUrl)
+            ? (cancelUrl.Contains("?") ? $"{cancelUrl}&order_id={order.Id}" : $"{cancelUrl}?order_id={order.Id}")
+            : $"{baseUrl}/user/checkout/cancel?order_id={order.Id}";
+
         if (!isStripeConfigured)
         {
             order.StripeSessionId = $"sim_{Guid.NewGuid():N}";
             await _orderRepo.AddAsync(order);
 
-            var baseUrl = (_stripe.FrontendBaseUrl ?? "http://localhost:5173").TrimEnd('/');
             _logger.LogInformation("[Payments] Creando sesión de pago simulada {SessionId} para pedido {OrderId}", order.StripeSessionId, order.Id);
 
             return new CheckoutResponse
             {
                 OrderId = order.Id,
-                CheckoutUrl = $"{baseUrl}/user/checkout/success?session_id={order.StripeSessionId}",
+                CheckoutUrl = finalSuccessUrl.Replace("{CHECKOUT_SESSION_ID}", order.StripeSessionId),
                 SessionId = order.StripeSessionId
             };
         }
@@ -97,8 +105,8 @@ public class PaymentService
             {
                 Mode = "payment",
                 ClientReferenceId = order.Id.ToString(),
-                SuccessUrl = $"{_stripe.FrontendBaseUrl.TrimEnd('/')}/user/checkout/success?session_id={{CHECKOUT_SESSION_ID}}",
-                CancelUrl = $"{_stripe.FrontendBaseUrl.TrimEnd('/')}/user/checkout/cancel?order_id={order.Id}",
+                SuccessUrl = finalSuccessUrl,
+                CancelUrl = finalCancelUrl,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(30),
                 LineItems = new List<SessionLineItemOptions>
                 {

@@ -5,6 +5,8 @@ public class CheckoutRequest
 {
     public Guid EventId { get; set; }
     public int Quantity { get; set; } = 1;
+    public string? SuccessUrl { get; set; }
+    public string? CancelUrl { get; set; }
 }
 
 /// <summary>Respuesta del checkout: URL de Stripe a la que redirigir al usuario.</summary>
