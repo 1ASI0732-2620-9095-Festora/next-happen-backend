@@ -39,8 +39,8 @@ public class TicketDbContext : DbContext
             entity.Property(o => o.Currency).HasMaxLength(10).IsRequired();
             entity.Property(o => o.UnitPrice).HasColumnType("decimal(10,2)");
             entity.Property(o => o.TotalAmount).HasColumnType("decimal(10,2)");
-            entity.Property(o => o.StripeSessionId).HasMaxLength(255);
-            entity.Property(o => o.StripePaymentIntentId).HasMaxLength(255);
+            entity.Property(o => o.StripeSessionId).HasMaxLength(150);
+            entity.Property(o => o.StripePaymentIntentId).HasMaxLength(150);
             entity.HasIndex(o => o.StripeSessionId).IsUnique();
         });
     }
