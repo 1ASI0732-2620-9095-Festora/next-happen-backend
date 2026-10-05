@@ -20,7 +20,7 @@ public class ConfirmResult
 {
     public string Status { get; set; } = string.Empty; // Pending | Paid | Failed
     public int Quantity { get; set; }
-    public bool Paid => Status == "Paid";
+    public bool Paid { get; set; }
 }
 
 /// <summary>Solicitud de validación de una entrada en la puerta.</summary>

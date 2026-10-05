@@ -205,7 +205,7 @@ public class PaymentService
             }
         }
 
-        return new ConfirmResult { Status = order.Status, Quantity = order.Quantity };
+        return new ConfirmResult { Status = order.Status, Quantity = order.Quantity, Paid = order.Status == OrderStatus.Paid };
     }
 
     /// <summary>Marca el pedido como pagado y emite las entradas. Idempotente.</summary>
