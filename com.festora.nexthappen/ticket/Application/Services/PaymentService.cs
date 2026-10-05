@@ -85,7 +85,8 @@ public class PaymentService
             return new CheckoutResponse
             {
                 OrderId = order.Id,
-                CheckoutUrl = $"{baseUrl}/user/checkout/success?session_id={order.StripeSessionId}"
+                CheckoutUrl = $"{baseUrl}/user/checkout/success?session_id={order.StripeSessionId}",
+                SessionId = order.StripeSessionId
             };
         }
 
@@ -127,7 +128,12 @@ public class PaymentService
             order.StripeSessionId = session.Id;
             await _orderRepo.AddAsync(order);
 
-            return new CheckoutResponse { OrderId = order.Id, CheckoutUrl = session.Url };
+            return new CheckoutResponse
+            {
+                OrderId = order.Id,
+                CheckoutUrl = session.Url,
+                SessionId = session.Id
+            };
         }
         catch (StripeException)
         {

@@ -12,6 +12,7 @@ public class CheckoutResponse
 {
     public Guid OrderId { get; set; }
     public string CheckoutUrl { get; set; } = string.Empty;
+    public string? SessionId { get; set; }
 }
 
 /// <summary>Resultado de confirmar una sesión de pago al volver de Stripe.</summary>
